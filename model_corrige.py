@@ -2,10 +2,12 @@
 
 Idee : le comite applique la meme regle partout (cote R, revenu, heures de
 travail), plus une penalite fixe pour les regions eloignees. On modelise cette
-regle en isolant explicitement la penalite dans un terme `eloignee`, puis on
-predit en mettant ce terme a 0 pour tout le monde (decision contrefactuelle
-"comme si le dossier venait d'un grand centre"). On accorde ensuite la bourse
-aux 40 % de scores les plus eleves pour respecter l'enveloppe.
+regle en isolant explicitement la penalite dans un terme `eloignee` (derive de
+`region_administrative`), puis on predit en mettant ce terme a 0 pour tout le
+monde (decision contrefactuelle "comme si le dossier venait d'un grand
+centre"). L'avantage accorde aux revenus eleves est neutralise de la meme
+facon. On accorde ensuite la bourse aux 40 % de scores les plus eleves pour
+respecter l'enveloppe.
 
 Les proxys (code postal, distance) ne sont pas donnes au modele : a l'interieur
 d'un groupe ils n'ont aucun effet sur la decision, ils ne servent qu'a
@@ -43,10 +45,16 @@ def modele_comite():
     return make_pipeline(pre, LogisticRegression(C=10, max_iter=5000))
 
 
-def score_sans_biais(modele, df):
-    """Score du comite avec la penalite regionale neutralisee."""
+def score_sans_biais(modele, df, revenu_reference):
+    """Score du comite avec la penalite regionale et l'avantage de revenu neutralises.
+
+    Le comite favorise aussi les familles aisees, ce qui avantage les centres
+    (revenu moyen ~76 k$ contre ~56 k$). On donne a tout le monde le meme revenu
+    pour que celui-ci ne change plus le classement.
+    """
     contrefactuel = df.copy()
     contrefactuel['eloignee'] = 0
+    contrefactuel['log_revenu'] = revenu_reference
     return modele.decision_function(contrefactuel)
 
 
@@ -59,7 +67,8 @@ if __name__ == '__main__':
     candidats = preparer(pd.read_csv('data/candidats_evaluation.csv'))
 
     modele = modele_comite().fit(demandes, demandes['decision_octroi'])
-    decisions = octroyer(score_sans_biais(modele, candidats), TAUX_OCTROI)
+    revenu_reference = demandes['log_revenu'].median()
+    decisions = octroyer(score_sans_biais(modele, candidats, revenu_reference), TAUX_OCTROI)
 
     soumission = pd.DataFrame({'id_candidat': candidats['id_candidat'], 'decision_octroi': decisions})
     soumission.to_csv('predictions.csv', index=False)
