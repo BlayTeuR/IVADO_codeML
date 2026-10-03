@@ -25,7 +25,6 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder, SplineTransformer, StandardScaler
 
 ELOIGNEES = ['Bas-Saint-Laurent', 'Cote-Nord', 'Gaspesie-Iles-de-la-Madeleine']
-TAUX_OCTROI = float(sys.argv[1]) if len(sys.argv) > 1 else 0.40
 
 
 def preparer(df):
@@ -63,12 +62,13 @@ def octroyer(score, taux):
 
 
 if __name__ == '__main__':
+    taux_octroi = float(sys.argv[1]) if len(sys.argv) > 1 else 0.40
     demandes = preparer(pd.read_csv('data/donnees_demandes.csv'))
     candidats = preparer(pd.read_csv('data/candidats_evaluation.csv'))
 
     modele = modele_comite().fit(demandes, demandes['decision_octroi'])
     revenu_reference = demandes['log_revenu'].median()
-    decisions = octroyer(score_sans_biais(modele, candidats, revenu_reference), TAUX_OCTROI)
+    decisions = octroyer(score_sans_biais(modele, candidats, revenu_reference), taux_octroi)
 
     soumission = pd.DataFrame({'id_candidat': candidats['id_candidat'], 'decision_octroi': decisions})
     soumission.to_csv('predictions.csv', index=False)
