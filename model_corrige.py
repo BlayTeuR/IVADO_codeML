@@ -44,16 +44,19 @@ def modele_comite():
     return make_pipeline(pre, LogisticRegression(C=10, max_iter=5000))
 
 
-def score_sans_biais(modele, df, revenu_reference):
+def score_sans_biais(modele, df, revenu_reference, intensite=1.0):
     """Score du comite avec la penalite regionale et l'avantage de revenu neutralises.
 
     Le comite favorise aussi les familles aisees, ce qui avantage les centres
     (revenu moyen ~76 k$ contre ~56 k$). On donne a tout le monde le meme revenu
     pour que celui-ci ne change plus le classement.
+
+    `intensite` va de 0 (regle du comite telle quelle) a 1 (les deux biais
+    entierement retires). Les valeurs intermediaires tracent le front de Pareto.
     """
     contrefactuel = df.copy()
-    contrefactuel['eloignee'] = 0
-    contrefactuel['log_revenu'] = revenu_reference
+    contrefactuel['eloignee'] = df['eloignee'] * (1 - intensite)
+    contrefactuel['log_revenu'] = df['log_revenu'] * (1 - intensite) + revenu_reference * intensite
     return modele.decision_function(contrefactuel)
 
 
