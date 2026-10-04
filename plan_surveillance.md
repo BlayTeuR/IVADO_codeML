@@ -2,7 +2,7 @@
 
 Ce plan dit comment s'assurer, une fois le modèle corrigé en service, que le biais régional ne
 revient pas. Il complète `audit_rapport.ipynb` (le diagnostic) et `model_corrige.ipynb` (la
-correction). Les indicateurs chiffrés sont calculés par `surveillance.py`.
+correction).
 
 ## 1. Principes
 
